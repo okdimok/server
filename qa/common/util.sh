@@ -219,26 +219,24 @@ function run_server_nowait () {
         return
     fi
 
+    if [ ! -f "$SERVER" ]; then
+        echo "=== $SERVER does not exist"
+        return
+    fi
+
     if [[ "$(< /proc/sys/kernel/osrelease)" == *Microsoft ]]; then
         # LD_PRELOAD not yet supported on windows
-        if [ ! -z "$SERVER_LD_PRELOAD" ]; then
+        if [ -z "$SERVER_LD_PRELOAD" ]; then
+            echo "=== Running $SERVER $SERVER_ARGS"
+        else
             echo "=== LD_PRELOAD not supported for windows"
             return
         fi
 
-        if [[ $SERVER_ARGS != '' ]]; then
-            argumentlist="-ArgumentList \"$SERVER_ARGS\""
-        fi
-    
         $SERVER $SERVER_ARGS > $SERVER_LOG 2>&1 &
         SERVER_PID=$!
     else
         # Non-windows
-        if [ ! -f "$SERVER" ]; then
-            echo "=== $SERVER does not exist"
-            return
-        fi
-
         if [ -z "$SERVER_LD_PRELOAD" ]; then
             echo "=== Running $SERVER $SERVER_ARGS"
         else
@@ -295,7 +293,7 @@ function kill_server () {
     # running on the system and just SIGINT all the tritonserver
     # windows executables running on the system. At least, ideally we
     # would like to use windows-kill to SIGINT, unfortunately that
-    # causes entire WSL shell to just exit. So instead we must use
+    # causes the entire WSL shell to just exit. So instead we must use
     # taskkill.exe which can only forcefully kill tritonserver which
     # means that it does not gracefully exit.
     if [[ "$(< /proc/sys/kernel/osrelease)" == *Microsoft ]]; then
